@@ -43,7 +43,10 @@ class JustBeforeEachSpec :
                 }
 
                 var shouldThrow = false
-                lateinit var result: Result<Int>
+                // Result<T> is a Kotlin inline value class -- lateinit isn't
+                // allowed on those, so a throwaway placeholder stands in
+                // until justBeforeEach overwrites it, before any it runs.
+                var result: Result<Int> = Result.success(0)
                 justBeforeEach { result = runCatching { act(shouldThrow) } }
 
                 context("happy path") {

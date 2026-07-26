@@ -22,7 +22,7 @@ class CalculatorSpec : DescribeSpec({
     describe("#divide") {
         var numerator = 0
         var denominator = 1
-        lateinit var result: Int
+        var result = 0 // lateinit doesn't work on Int -- see "Gotchas" below
         justBeforeEach { result = Calculator.divide(numerator, denominator) }
 
         context("dividing evenly") {
@@ -70,7 +70,7 @@ happy-path and an error-path sibling `context` can share the same hoisted
 action:
 
 ```kotlin
-lateinit var result: Result<Scan>
+var result: Result<Scan> = Result.failure(IllegalStateException("not yet run"))
 justBeforeEach { result = runCatching { client.delete(scan) } }
 
 context("when the server confirms the delete") {
@@ -83,6 +83,15 @@ context("when the server rejects the delete") {
     }
 }
 ```
+
+## Gotchas
+
+`lateinit` doesn't work for every shared-variable type -- it's restricted to
+non-null, non-primitive reference types. `Result<T>` is a Kotlin inline
+value class and primitives (`Int`, `Boolean`, ...) aren't reference types at
+all, so neither can use `lateinit var`; declare a `var` with a throwaway
+placeholder instead (as above) -- `justBeforeEach` overwrites it before any
+`it` runs, so the placeholder value itself never matters.
 
 ## Requirements
 
