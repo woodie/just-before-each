@@ -1,11 +1,16 @@
-# just-before-each
+# kwick
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)](build.gradle.kts)
-[![CI](https://github.com/woodie/just-before-each/actions/workflows/CI.yml/badge.svg)](https://github.com/woodie/just-before-each/actions/workflows/CI.yml)
-[![Release](https://img.shields.io/github/v/release/woodie/just-before-each.svg)](https://github.com/woodie/just-before-each/releases/latest)
-[![License](https://img.shields.io/github/license/woodie/just-before-each.svg)](LICENSE)
+[![CI](https://github.com/woodie/kwick/actions/workflows/CI.yml/badge.svg)](https://github.com/woodie/kwick/actions/workflows/CI.yml)
+[![Release](https://img.shields.io/github/v/release/woodie/kwick.svg)](https://github.com/woodie/kwick/releases/latest)
+[![License](https://img.shields.io/github/license/woodie/kwick.svg)](LICENSE)
 
-Quick's `justBeforeEach` for Kotest's `DescribeSpec`.
+RSpec/Quick conventions for Kotest's `DescribeSpec` -- `justBeforeEach`
+first, with room to grow (a formalized `subject`, maybe more). Named after
+[Quick](https://github.com/Quick/Quick), the Swift framework this is
+ported from.
+
+## `justBeforeEach`
 
 Kotest's own `beforeEach` reruns fresh before every `it`, from the outermost
 `describe` inward -- but there's no hook that runs *after* every `beforeEach`
@@ -15,7 +20,7 @@ at every nesting depth, immediately before the `it` itself. That's
 in the parent):
 
 ```kotlin
-import com.netpress.justbeforeeach.justBeforeEach
+import com.netpress.kwick.justBeforeEach
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 
@@ -51,7 +56,7 @@ work -- no engine hook or wrapped `describe`/`context`/`it` needed. See
 is registered on the project -- add it to your `ProjectConfig`:
 
 ```kotlin
-import com.netpress.justbeforeeach.JustBeforeEachExtension
+import com.netpress.kwick.JustBeforeEachExtension
 import io.kotest.core.config.AbstractProjectConfig
 
 object ProjectConfig : AbstractProjectConfig() {

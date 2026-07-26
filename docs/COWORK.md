@@ -1,4 +1,4 @@
-# Picking up just-before-each in a new Cowork session
+# Picking up kwick in a new Cowork session
 
 Context for whoever opens this repo cold, with none of the prior conversation
 history. Cross-project conventions (git locks, sandbox toolchain gaps,
@@ -52,7 +52,7 @@ real types to compile the library itself, not just test it).
 
 Bootstrap path, mirroring `humane-kotlin`'s own history: prove the DSL out
 here first, consume it from `next-caltrain-kotlin` as a composite build
-(`pluginManagement`-free `includeBuild("../just-before-each")`, a plain
+(`pluginManagement`-free `includeBuild("../kwick")`, a plain
 dependency substitution -- not the `pluginManagement { includeBuild(...) }`
 form `kotidy` needed, since this isn't a plugin), then add
 `com.vanniktech.maven.publish` + Central Portal signing once it's stable
@@ -240,7 +240,10 @@ in this repo's suite -- same instinct as `expect_test.go`'s dedicated
 `describe("Panic")` block, which exists to prove the pattern compiles and
 behaves, not just to read well in a README.
 
-## Naming: checked for collisions before creating the repo
+## Naming: checked for collisions, twice
+
+First pass, before creating the repo (under the original name,
+`just-before-each`):
 
 - GitHub: `just-before-each` returns `"total_count": 0` from GitHub's own
   repository search API -- unused.
@@ -251,17 +254,34 @@ behaves, not just to read well in a README.
   No existing library defines a top-level `justBeforeEach` an import could
   collide with.
 
-Open naming question, not a collision: `kotidy`/`gorderly`/`xctidy` are all
-coined portmanteaus (tool + tidy/orderly); `just-before-each` would be the
-first repo in this family named literally after the feature instead. Not a
-problem, just noted in case a `kotidy`-style name is ever preferred instead
--- woodie's call.
+Second pass, once `com.netpress.justbeforeeach.justBeforeEach` proved
+painful to read as an import and the repo was renamed. `komplete`/
+`Komplement` (woodie's own suggestions) were ruled out first -- Native
+Instruments' "Komplete Kontrol" product line is a real collision risk.
+`kwick` (a pun on [Quick](https://github.com/Quick/Quick), the Swift
+framework this is ported from) checked clean instead:
+
+- GitHub: ~271 substring hits on `kwick`, none of them Kotlin or
+  testing-related.
+- Maven Central: no group or artifact matching `kwick`.
+
+Decision (resolved, not open): rename to `kwick`. Note for later: every
+other repo in this family (`kotidy`/`gorderly`/`xctidy`) is a coined
+portmanteau of tool + tidy/orderly; `kwick` breaks that pattern slightly
+(named after Quick, not after "tidy"), which is fine but worth knowing if a
+`kotidy`-style name ever feels better later -- woodie's call.
+
+The extension itself stays `JustBeforeEachExtension`/`justBeforeEach` --
+considered renaming to `BeforeExtension` alongside the package, rejected
+because it collides conceptually with Kotest's own `Before*` vocabulary
+(`BeforeTest`/`BeforeEach`/`BeforeAny`/`BeforeContainer` are real Kotest
+typealiases).
 
 ## Package naming
 
-`com.netpress.justbeforeeach` (dashes dropped, matching how `humane-kotlin`
-maps to `com.netpress.humane` -- Kotlin/Java package segments can't contain
-hyphens).
+`com.netpress.kwick` -- no dashes to drop this time (unlike
+`humane-kotlin` -> `com.netpress.humane`), since `kwick` was chosen without
+any.
 
 ## FRAMEWORK.md follow-ups, once the DSL ships
 
@@ -302,15 +322,15 @@ real toolchain run can actually confirm Kotest's exact API surface.
 ## Consumed by
 
 [`next-caltrain-kotlin`](https://github.com/woodie/next-caltrain-kotlin) --
-via a composite build (`includeBuild("../just-before-each")` in its
-`settings.gradle.kts`, `testImplementation("com.netpress:just-before-
-each:0.1.0")` in `app/build.gradle.kts`), not a published artifact, so both
+via a composite build (`includeBuild("../kwick")` in its
+`settings.gradle.kts`, `testImplementation("com.netpress:kwick:0.1.0")` in
+`app/build.gradle.kts`), not a published artifact, so both
 repos need to sit as sibling directories on disk. `GoodTimesSpec.kt`'s
 `debugOverrideDotw` context is the concrete, motivating rewrite -- see its
 own commit for the before/after. CI there needs a temporary sibling-
 checkout step for the same reason (see its `CI.yml`); both repos also need
 to actually be pushed before that CI run can go green, since it checks out
-`woodie/just-before-each` fresh rather than reading the local mount.
+`woodie/kwick` fresh rather than reading the local mount.
 
 Per this account's own "Releasing across multiple repos" convention: prove
 this out for real in `next-caltrain-kotlin` first (real `./gradlew clean
@@ -333,9 +353,9 @@ release here is unblocked as of this run.
 **Nothing has been pushed to GitHub yet** -- neither this repo nor
 `next-caltrain-kotlin`. Until both are pushed: the README's CI/Release
 badges will show broken/gray, `next-caltrain-kotlin`'s own CI can't run at
-all (its workflow checks out `woodie/just-before-each` fresh, which doesn't
+all (its workflow checks out `woodie/kwick` fresh, which doesn't
 exist remotely yet), and the `gh release create` command above has nothing
-to attach to. Push `just-before-each` first (tag included), then
+to attach to. Push `kwick` first (tag included), then
 `next-caltrain-kotlin`, then run the `gh release create` command.
 
 ## Next steps (drafted this session, not filed as real issues yet)
@@ -348,11 +368,10 @@ cold session has no way to find them except this paragraph, so treat filing
 them (or at least committing the drafts somewhere durable) as the actual
 next action, not an optional cleanup:
 
-- **`just-before-each`**: publish to Maven Central (sign and publish,
-  following `humane-kotlin`'s `v0.1.0` -> `v0.1.1` bootstrap exactly); the
-  naming question (keep `just-before-each` or match the `kotidy`/`gorderly`/
-  `xctidy` portmanteau convention -- decide before publishing a real
-  coordinate, since renaming after is much more disruptive).
+- **`kwick`**: publish to Maven Central (sign and publish,
+  following `humane-kotlin`'s `v0.1.0` -> `v0.1.1` bootstrap exactly),
+  under the `com.netpress:kwick` coordinate -- the naming question is
+  resolved (see "Naming" above), so this is unblocked.
 - **`next-caltrain-kotlin`**: switch off the composite build once the Maven
   Central publish lands (drop `includeBuild`, pin a real version, drop the
   CI sibling-checkout step).

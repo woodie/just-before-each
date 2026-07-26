@@ -1,4 +1,4 @@
-package com.netpress.justbeforeeach
+package com.netpress.kwick
 
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe

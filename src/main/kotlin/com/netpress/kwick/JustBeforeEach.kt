@@ -1,4 +1,4 @@
-package com.netpress.justbeforeeach
+package com.netpress.kwick
 
 import io.kotest.core.descriptors.Descriptor
 import io.kotest.core.extensions.TestCaseExtension
