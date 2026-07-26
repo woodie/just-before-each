@@ -132,8 +132,26 @@ violations from functions written on one line. `Descriptor`'s own package
 class with a copyable `test` field were all confirmed correct by reading
 Kotest's actual `v5.9.1` source directly (`TestCase.kt`, `ContainerScope.kt`,
 `TestCaseExtension.kt`) once real compiler errors made clear which parts of
-the original inspection-only guess needed checking. `./gradlew clean check`
-still needs to be re-run to confirm this round is actually green.
+the original inspection-only guess needed checking.
+
+Two more rounds after that: a ktlint style violation (`class
+JustBeforeEachSpec : DescribeSpec({` needed the supertype on its own line,
+official style -- matches `humane-kotlin`'s `HumanSizeSpec.kt` exactly),
+then a real compile error (`lateinit` doesn't work on `Result<T>` -- it's a
+Kotlin inline value class, and `lateinit` is restricted to non-null,
+non-primitive reference types, which also silently ruled out the README's
+`lateinit var result: Int` example the same way, just not yet caught by a
+compiler since that one's doc-only). Both fixed; a throwaway-placeholder
+`var` replaces `lateinit` in both the spec and the README, with a new
+README "Gotchas" section explaining why.
+
+**`./gradlew clean check` is green** -- confirmed on a real Mac, all 4
+`JustBeforeEachSpec` examples passing: the ordering guarantee (`beforeEach`
+then `justBeforeEach` then `it`, and `justBeforeEach` declared above a
+context with its own deeper `beforeEach` still running after it) and the
+`runCatching`-outcome convention (happy path and error path sharing one
+hoisted action). This is the first real, verified confirmation that the
+whole mechanism actually works, not just that it compiles.
 
 ## Scope for v1: suspend support is not a follow-up
 
@@ -263,16 +281,20 @@ hyphens).
 
 ## Current status
 
-Repo scaffolded (Gradle/Kotlin project, Kotest + ktlint + `kotidy` wired up,
-CI, `Makefile`), and the DSL itself is written: `justBeforeEach` +
-`JustBeforeEachExtension` in `src/main/kotlin/.../JustBeforeEach.kt`, wired
-into the test `ProjectConfig`, with a dogfood spec
-(`JustBeforeEachSpec.kt`) covering ordering and the `runCatching`-outcome
-convention. No Maven Central publishing setup yet; see "Packaging" above
-for why that's deliberate.
+`./gradlew clean check` is green on a real Mac (JDK 17, Gradle 9.4.1, Kotlin
+2.1.0 via the Gradle toolchain) -- all 4 `JustBeforeEachSpec` examples
+passing, ktlint clean. Repo scaffolded (Gradle/Kotlin project, Kotest +
+ktlint + `kotidy` wired up, CI, `Makefile`); the DSL itself is written and
+working: `justBeforeEach` + `JustBeforeEachExtension` in
+`src/main/kotlin/.../JustBeforeEach.kt`, wired into the test
+`ProjectConfig`, with a dogfood spec (`JustBeforeEachSpec.kt`) covering the
+ordering guarantee and the `runCatching`-outcome convention end to end. No
+Maven Central publishing setup yet; see "Packaging" above for why that's
+deliberate -- next real step once this is ready to be consumed by
+`next-caltrain-kotlin`.
 
-Built entirely by inspection, no local toolchain to confirm against (see
-`~/workspace/woodie/docs/COWORK.md`'s "Working on unfamiliar stacks") --
-`./gradlew clean check` needs a real Mac run before trusting any of this
-actually compiles. See "Core mechanism" above for the specific API surface
-most likely to need a small fix once real Kotest `5.9.1` jars are involved.
+Took four real-Mac rounds to get here from the first inspection-only pass
+(see "Core mechanism" above for the specific bugs each round caught) --
+consistent with this account's "Working on unfamiliar stacks" convention:
+the sandbox can build by inspection and reason about design, but only a
+real toolchain run can actually confirm Kotest's exact API surface.
