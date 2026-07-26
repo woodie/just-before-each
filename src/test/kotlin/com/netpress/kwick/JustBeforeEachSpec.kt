@@ -56,6 +56,33 @@ class JustBeforeEachSpec :
                         }
                     }
                 }
+
+                // CaltrainServiceSpec's #routes() (next-caltrain-kotlin/-swift)
+                // hoists a whole result and has several `it`s underneath
+                // asserting different facts about it, rather than one `it`
+                // per context like every other real usage so far. Proves
+                // that shape: multiple `it`s sharing one subject a parent's
+                // justBeforeEach computed from this context's own
+                // beforeEach-set input.
+                context("several its reading one hoisted subject with multiple facts") {
+                    data class Parsed(val upper: String, val length: Int)
+
+                    lateinit var input: String
+                    lateinit var parsed: Parsed
+                    justBeforeEach { parsed = Parsed(upper = input.uppercase(), length = input.length) }
+
+                    context("input set by a nested beforeEach") {
+                        beforeEach { input = "hi" }
+
+                        it("uppercases the input") {
+                            parsed.upper shouldBe "HI"
+                        }
+
+                        it("also reports its length") {
+                            parsed.length shouldBe 2
+                        }
+                    }
+                }
             }
 
             context("the runCatching-outcome convention") {
