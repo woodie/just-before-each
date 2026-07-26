@@ -2,6 +2,7 @@
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)](build.gradle.kts)
 [![CI](https://github.com/woodie/just-before-each/actions/workflows/CI.yml/badge.svg)](https://github.com/woodie/just-before-each/actions/workflows/CI.yml)
+[![Release](https://img.shields.io/github/v/release/woodie/just-before-each.svg)](https://github.com/woodie/just-before-each/releases/latest)
 [![License](https://img.shields.io/github/license/woodie/just-before-each.svg)](LICENSE)
 
 Quick's `justBeforeEach` for Kotest's `DescribeSpec`.
