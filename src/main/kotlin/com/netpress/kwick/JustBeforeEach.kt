@@ -6,6 +6,7 @@ import io.kotest.core.spec.style.scopes.ContainerScope
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.core.test.TestScope
+import io.kotest.core.test.TestType
 import io.kotest.core.test.parents
 import java.util.concurrent.ConcurrentHashMap
 
@@ -55,11 +56,20 @@ internal object JustBeforeEachRegistry {
 }
 
 /**
- * Wraps every test case so registered justBeforeEach blocks run immediately
- * before the real test body. Kotest's own beforeEach/beforeTest chain still
- * fires unmodified as part of [execute] -- this only replaces the leaf
- * `test` closure passed into it, so the ordering is: real beforeEach chain,
- * then these blocks (root-to-leaf), then the real test body.
+ * Wraps every leaf test case so registered justBeforeEach blocks run
+ * immediately before the real test body. Kotest's own beforeEach/beforeTest
+ * chain still fires unmodified as part of [execute] -- this only replaces
+ * the leaf `test` closure passed into it, so the ordering is: real
+ * beforeEach chain, then these blocks (root-to-leaf), then the real test
+ * body.
+ *
+ * Container test cases (every `describe`/`context`, not just `it`) are
+ * intentionally skipped -- TestCaseExtension.intercept fires for those too,
+ * and a container's own `test` closure is the code that discovers its
+ * children, run well before any descendant `beforeEach` has set up the
+ * values a hoisted action usually reads. Wrapping it would run the action
+ * during tree discovery instead of before each real test, throwing on any
+ * `lateinit var` a block reads but hasn't been assigned yet.
  *
  * Add to the consuming project's `ProjectConfig.extensions()`:
  * ```kotlin
@@ -71,6 +81,8 @@ object JustBeforeEachExtension : TestCaseExtension {
         testCase: TestCase,
         execute: suspend (TestCase) -> TestResult,
     ): TestResult {
+        if (testCase.type != TestType.Test) return execute(testCase)
+
         val blocks = JustBeforeEachRegistry.blocksFor(testCase)
         if (blocks.isEmpty()) return execute(testCase)
 

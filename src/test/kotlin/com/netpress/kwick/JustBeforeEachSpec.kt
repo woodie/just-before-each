@@ -34,6 +34,28 @@ class JustBeforeEachSpec :
                         }
                     }
                 }
+
+                // Regression: TestCaseExtension.intercept fires for container
+                // test cases too, not just `it`s. Every describe/context
+                // between a justBeforeEach and the it underneath it is one
+                // of those containers -- if JustBeforeEachExtension doesn't
+                // skip them, this block runs during tree discovery, before
+                // the nested beforeEach below has assigned `input`, and
+                // throws UninitializedPropertyAccessException instead of
+                // ever reaching the it.
+                context("reading a lateinit var only set by a nested beforeEach") {
+                    lateinit var input: String
+                    lateinit var result: String
+                    justBeforeEach { result = input.uppercase() }
+
+                    context("input set by a nested beforeEach") {
+                        beforeEach { input = "hi" }
+
+                        it("waits for the nested beforeEach before running") {
+                            result shouldBe "HI"
+                        }
+                    }
+                }
             }
 
             context("the runCatching-outcome convention") {

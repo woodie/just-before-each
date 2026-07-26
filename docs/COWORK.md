@@ -153,6 +153,49 @@ context with its own deeper `beforeEach` still running after it) and the
 hoisted action). This is the first real, verified confirmation that the
 whole mechanism actually works, not just that it compiles.
 
+## Real bug, found post-v0.1.0: container test cases were getting wrapped too
+
+`next-caltrain-kotlin` pushing `justBeforeEach` into more of its specs (see
+its own commit adding it to `CaltrainScheduleSpec.kt`'s `.optionIndexFor()`
+and `CaltrainServiceSpec.kt`'s `.direction()`) hit a real `make test`
+failure: `kotlin.UninitializedPropertyAccessException` on a `lateinit var`
+that a nested `beforeEach` was supposed to set before `justBeforeEach` ever
+read it. Reported as an `initializationError` on the *container* itself
+(`with no special dates`, `when traveling from San Francisco to Gilroy`),
+not on any individual `it` -- the tell that something was running during
+tree discovery, not during a real test.
+
+Root cause: `TestCaseExtension.intercept` fires for every `TestCase`
+Kotest builds, and Kotest represents *every* `describe`/`context` as a
+`TestCase` too (`type = TestType.Container`), not just `it` (`type =
+TestType.Test`). `JustBeforeEachExtension.intercept` never checked
+`testCase.type`, so it wrapped container test cases exactly the same way
+as leaf ones -- and a container's own `test` closure is the code that
+*discovers its children*, which runs well before any descendant
+`beforeEach` has assigned anything. Wrapping it means the hoisted action
+runs during that discovery pass, reading whatever's already been assigned
+(so a `var` with a real default value, like `debugOverrideDotw`'s `var dotw
+= 0` in `next-caltrain-kotlin`'s `GoodTimesSpec.kt`, silently no-ops and
+gets overwritten later, no crash) or crashing outright on an unassigned
+`lateinit var`.
+
+This bug existed since `v0.1.0` -- it just never showed up. Every real
+usage up to this point either didn't read an uninitialized value inside
+`justBeforeEach` (`GoodTimesSpec.kt`'s `dotw` has a default of `0`) or had
+its side effects erased before the real assertion ran (the dogfood spec's
+`log.clear()` in a `beforeEach` above the affected block). The new
+`next-caltrain-kotlin` usages were the first to hoist a `lateinit var` read
+with a container sitting between the `justBeforeEach` and the `it` --
+which, per "Core mechanism" above, is the normal shape, not an edge case.
+
+Fixed in `JustBeforeEach.kt`'s `JustBeforeEachExtension.intercept`: skip
+entirely (`return execute(testCase)`) unless `testCase.type == TestType.Test`.
+Container test cases now pass through completely untouched; only real leaf
+`it`s get their `test` closure wrapped. Added a regression case to
+`JustBeforeEachSpec.kt` ("reading a lateinit var only set by a nested
+beforeEach") that reproduces the exact shape -- would throw
+`UninitializedPropertyAccessException` without the fix, passes with it.
+
 ## Scope for v1: suspend support is not a follow-up
 
 Pulled every real `justBeforeEach` call site across `next-caltrain-swift`
