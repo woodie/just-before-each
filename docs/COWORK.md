@@ -316,3 +316,11 @@ Per this account's own "Releasing across multiple repos" convention: prove
 this out for real in `next-caltrain-kotlin` first (real `./gradlew clean
 test` run, not just `check` here), then tag a release -- not before. See
 "Packaging" above for the same sequencing applied to publishing.
+
+**Confirmed, real Mac, `make test`:** all 81 examples pass, including the
+`debugOverrideDotw` context exercising `justBeforeEach` for real (not just
+in this repo's own dogfood spec) -- `beforeEach` setting `dotw` in each
+sibling context, `justBeforeEach` at the parent consuming it, in the
+Friday/Saturday/Sunday cases. `make lint` clean too. This is the real,
+cross-repo confirmation the sequencing above was waiting on -- tagging a
+release here is unblocked as of this run.
