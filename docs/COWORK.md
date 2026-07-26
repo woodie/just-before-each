@@ -324,3 +324,42 @@ sibling context, `justBeforeEach` at the parent consuming it, in the
 Friday/Saturday/Sunday cases. `make lint` clean too. This is the real,
 cross-repo confirmation the sequencing above was waiting on -- tagging a
 release here is unblocked as of this run.
+
+## Tag/push status
+
+`v0.1.0` is tagged locally (annotated, `git rev-parse HEAD` and
+`git rev-parse v0.1.0^{commit}` both confirmed matching), with
+`docs/releases/v0.1.0.md` written for `gh release create --notes-file`.
+**Nothing has been pushed to GitHub yet** -- neither this repo nor
+`next-caltrain-kotlin`. Until both are pushed: the README's CI/Release
+badges will show broken/gray, `next-caltrain-kotlin`'s own CI can't run at
+all (its workflow checks out `woodie/just-before-each` fresh, which doesn't
+exist remotely yet), and the `gh release create` command above has nothing
+to attach to. Push `just-before-each` first (tag included), then
+`next-caltrain-kotlin`, then run the `gh release create` command.
+
+## Next steps (drafted this session, not filed as real issues yet)
+
+Seven follow-ups were written up as GitHub-issue-shaped markdown files
+during this session, one per repo/topic, but they only exist as session
+scratch output right now -- not committed anywhere, not filed via `gh issue
+create`. If they're not filed for real before this thread is gone, a future
+cold session has no way to find them except this paragraph, so treat filing
+them (or at least committing the drafts somewhere durable) as the actual
+next action, not an optional cleanup:
+
+- **`just-before-each`**: publish to Maven Central (sign and publish,
+  following `humane-kotlin`'s `v0.1.0` -> `v0.1.1` bootstrap exactly); the
+  naming question (keep `just-before-each` or match the `kotidy`/`gorderly`/
+  `xctidy` portmanteau convention -- decide before publishing a real
+  coordinate, since renaming after is much more disruptive).
+- **`next-caltrain-kotlin`**: switch off the composite build once the Maven
+  Central publish lands (drop `includeBuild`, pin a real version, drop the
+  CI sibling-checkout step).
+- **`kotidy`**: `docs/FRAMEWORK.md` gets a new `justBeforeEach` section
+  (mirroring `xctidy`'s) plus a named `afterEach`-for-cleanup section.
+- **`gorderly`** and **`xctidy`**: `docs/FRAMEWORK.md` both get the
+  direct-assign-vs-closure-`subject` clarification from above.
+- **`huck`**: revisit `ScanClientSpec.kt`'s inline-per-`it` suspend setup
+  once this library is published -- the concrete first real use case for
+  the suspend support already built in.
