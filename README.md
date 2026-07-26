@@ -5,10 +5,10 @@
 [![Release](https://img.shields.io/github/v/release/woodie/kwick.svg)](https://github.com/woodie/kwick/releases/latest)
 [![License](https://img.shields.io/github/license/woodie/kwick.svg)](LICENSE)
 
-RSpec/Quick conventions for Kotest's `DescribeSpec` -- `justBeforeEach`
-first, with room to grow (a formalized `subject`, maybe more). Named after
-[Quick](https://github.com/Quick/Quick), the Swift framework this is
-ported from.
+Better, cleaner tests for Kotest's `DescribeSpec` -- real nested context
+with less duplication, starting with `justBeforeEach` (inspired by
+[Quick](https://github.com/Quick/Quick)'s `justBeforeEach` for Swift), with
+room to grow (a formalized `subject`, maybe more).
 
 ## `justBeforeEach`
 
@@ -47,8 +47,7 @@ class CalculatorSpec : DescribeSpec({
 Each `context` only states what's different about it; the call under test
 is written once, in `justBeforeEach`, and Kotest's own guarantee that every
 ancestor `beforeEach` completes before the `it` runs is what makes this
-work -- no engine hook or wrapped `describe`/`context`/`it` needed. See
-`docs/COWORK.md`'s "Core mechanism" for exactly how.
+work -- no engine hook or wrapped `describe`/`context`/`it` needed.
 
 ## Setup
 
@@ -92,8 +91,11 @@ context("when the server rejects the delete") {
 
 ## Gotchas
 
-`lateinit` doesn't work for every shared-variable type -- it's restricted to
-non-null, non-primitive reference types. `Result<T>` is a Kotlin inline
+The usual way to share a value `justBeforeEach` sets with the `it` blocks
+below it is `lateinit var` -- it forces every `it` to see a real value, no
+fake placeholder needed. That doesn't work for every shared-variable type,
+though, which both examples above happen to hit: `lateinit` is restricted
+to non-null, non-primitive reference types. `Result<T>` is a Kotlin inline
 value class and primitives (`Int`, `Boolean`, ...) aren't reference types at
 all, so neither can use `lateinit var`; declare a `var` with a throwaway
 placeholder instead (as above) -- `justBeforeEach` overwrites it before any
