@@ -6,6 +6,7 @@ import io.kotest.core.spec.style.scopes.ContainerScope
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.core.test.TestScope
+import io.kotest.core.test.parents
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -33,18 +34,23 @@ suspend fun ContainerScope.justBeforeEach(block: suspend TestScope.() -> Unit) {
  * specs from more than one spec instance concurrently.
  */
 internal object JustBeforeEachRegistry {
-    private val blocks = ConcurrentHashMap<Descriptor, MutableList<suspend TestScope.() -> Unit>>()
+    private val blocks = ConcurrentHashMap<Descriptor.TestDescriptor, MutableList<suspend TestScope.() -> Unit>>()
 
-    fun register(descriptor: Descriptor, block: suspend TestScope.() -> Unit) {
+    fun register(
+        descriptor: Descriptor.TestDescriptor,
+        block: suspend TestScope.() -> Unit,
+    ) {
         blocks.getOrPut(descriptor) { mutableListOf() }.add(block)
     }
 
-    // Root-to-leaf: walks the descriptor's own ancestor chain, then reverses
-    // it, so a parent's justBeforeEach always runs before a child's -- same
-    // ordering Quick itself guarantees for nested justBeforeEach.
-    fun blocksFor(descriptor: Descriptor): List<suspend TestScope.() -> Unit> {
-        val chain = generateSequence(descriptor) { it.parent() }.toList().asReversed()
-        return chain.flatMap { blocks[it].orEmpty() }
+    // Root-to-leaf, using TestCase's own parent chain -- TestCase.parents()
+    // (io.kotest.core.test) already returns ancestors root-first, so this
+    // only needs to append the test case itself and look up each descriptor
+    // in registration order. Descriptor has no public parent-walking API of
+    // its own in Kotest 5.9.1; TestCase does.
+    fun blocksFor(testCase: TestCase): List<suspend TestScope.() -> Unit> {
+        val chain = testCase.parents() + testCase
+        return chain.flatMap { blocks[it.descriptor].orEmpty() }
     }
 }
 
@@ -65,15 +71,13 @@ object JustBeforeEachExtension : TestCaseExtension {
         testCase: TestCase,
         execute: suspend (TestCase) -> TestResult,
     ): TestResult {
-        val blocks = JustBeforeEachRegistry.blocksFor(testCase.descriptor)
+        val blocks = JustBeforeEachRegistry.blocksFor(testCase)
         if (blocks.isEmpty()) return execute(testCase)
 
-        val wrapped = testCase.copy(
-            test = { scope ->
-                blocks.forEach { it(scope) }
-                testCase.test(scope)
-            },
-        )
-        return execute(wrapped)
+        val wrappedTest: suspend TestScope.() -> Unit = {
+            blocks.forEach { it() }
+            testCase.test(this)
+        }
+        return execute(testCase.copy(test = wrappedTest))
     }
 }

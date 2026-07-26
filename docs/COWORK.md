@@ -89,11 +89,12 @@ Kotest -- no wrapper, no import swap. Only two new pieces exist:
   (`ContainerScope.testCase.descriptor`).
 - `JustBeforeEachExtension`, a `TestCaseExtension` -- Kotest's own,
   documented extension point for wrapping test-case execution. For every
-  `TestCase` about to run, it walks the descriptor's ancestor chain
-  (`generateSequence(descriptor) { it.parent() }`, reversed to root-to-leaf),
-  looks up any registered blocks for each ancestor, and replaces the
-  `TestCase`'s `test` closure with one that runs those blocks first, then
-  calls the original. Kotest's real `beforeEach`/`beforeTest` chain is
+  `TestCase` about to run, it walks the test case's own ancestor chain via
+  `TestCase.parents()` (a real Kotest utility, root-first already -- see
+  `io.kotest.core.test.TestCase.kt`), looks up any registered blocks for
+  each ancestor plus the test case itself, and replaces the `TestCase`'s
+  `test` closure with one that runs those blocks first, then calls the
+  original. Kotest's real `beforeEach`/`beforeTest` chain is
   untouched and still fires as part of `execute(testCase)` -- swapping in a
   wrapped `test` closure before calling `execute` doesn't skip or reorder
   that, it just runs *inside* the slot Kotest was already going to invoke
@@ -113,16 +114,26 @@ asserting the exact sequence, plus a case where `justBeforeEach` is declared
 *above* a nested context that has its own `beforeEach`, confirming the inner
 hook still runs first.
 
-**Not yet verified against a real compiler** -- built by inspection with no
-Kotest jars reachable from the sandbox (see "Current status"). The riskiest
-specifics, worth checking first on a real Mac: `Descriptor`'s package
-(assumed `io.kotest.core.descriptors.Descriptor`) and its `parent()` method
-shape, `ContainerScope.testCase` as the way to reach the current container's
-descriptor, `TestCaseExtension.intercept`'s exact signature, and whether
-`TestCase` is really a data class exposing a copyable `test` field. Any of
-these being named slightly differently in the pinned Kotest `5.9.1` is a
-small, localized fix, not a redesign -- the mechanism above is the part to
-preserve.
+**First real-Mac run caught two bugs, both now fixed.** `./gradlew clean
+check` (Kotlin `2.1.0` via the Gradle toolchain, ktlint official style)
+failed with: a real compile error on the original `blocksFor(descriptor:
+Descriptor)` -- `Descriptor` has no public `parent()` in Kotest `5.9.1`, so
+the ancestor walk was rewritten against `TestCase.parents()` instead
+(confirmed real, from Kotest's own `io.kotest.core.test.TestCase.kt` --
+root-first already, no reversing needed); a type mismatch on the wrapped
+`test` closure (`{ scope -> ... }` was inferred as a two-argument function
+instead of the expected `suspend TestScope.() -> Unit`, since that type
+takes no explicit parameter, only a receiver -- fixed by using the implicit
+`this` receiver and extracting a separately-typed `wrappedTest` local
+instead of an inline lambda); plus two ktlint parameter-list-wrapping
+violations from functions written on one line. `Descriptor`'s own package
+(`io.kotest.core.descriptors`), `ContainerScope.testCase`,
+`TestCaseExtension.intercept`'s signature, and `TestCase` being a real data
+class with a copyable `test` field were all confirmed correct by reading
+Kotest's actual `v5.9.1` source directly (`TestCase.kt`, `ContainerScope.kt`,
+`TestCaseExtension.kt`) once real compiler errors made clear which parts of
+the original inspection-only guess needed checking. `./gradlew clean check`
+still needs to be re-run to confirm this round is actually green.
 
 ## Scope for v1: suspend support is not a follow-up
 

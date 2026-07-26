@@ -35,3 +35,6 @@ build/
 .idea/
 *.iml
 out/
+
+# Editor swap files
+*.swp
