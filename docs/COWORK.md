@@ -60,34 +60,69 @@ enough to publish for real, the same way `humane-kotlin` went from
 composite-build-only at `v0.1.0` to Maven Central at `v0.1.1`. Not done yet
 in this repo's `build.gradle.kts` on purpose -- see the comment there.
 
-## Core mechanism: no engine hook needed
+## Core mechanism: `TestCaseExtension`, not shadowed `describe`/`context`/`it`
 
-Kotest already guarantees every ancestor `beforeEach`/`beforeTest` at any
-nesting depth completes before an `it`'s test body runs. `justBeforeEach`
-doesn't need a `TestCaseExtension`/interceptor to get Quick's guarantee ("runs
-after every `beforeEach` at every depth, immediately before the `it`") --
-it just needs to run *inside* the test body, at the very start.
+**Revised from the original plan below after actually writing the code --
+the first design didn't survive contact with how Kotest's DSL is really
+implemented.** The original idea was to shadow `describe`/`context`/`it`
+with wrapped versions that thread a registration-time stack, on the theory
+that Kotest already guarantees every ancestor `beforeEach` completes before
+an `it` body runs, so no engine hook would be needed -- just embed the
+captured blocks at the start of a wrapped `it` body. That guarantee is real,
+but the shadowing mechanism isn't: Kotest's `describe`/`context`/`it` are
+default-implemented members of interfaces (`DescribeSpecRootScope`,
+`DescribeSpecContainerScope`), and a *nested* `describe`/`context` block
+runs against a Kotest-internal scope object, not against this library's
+code or the consumer's own `Spec` subclass -- there's no supertype of ours
+in that chain to override, and Kotlin resolves a member function over a
+same-named top-level one regardless of import, so a same-named top-level
+`it` would just never fire. Shadowing genuinely doesn't work here.
 
-The implementation shadows three DSL entry points (`describe`, `context`,
-`it`) plus adds `justBeforeEach`, threading a registration-time stack:
-`context { ... }` pushes/pops a frame, `justBeforeEach { }` registers a
-block on the current frame, and `it("...") { }` captures the full active
-stack (root-to-leaf, at registration time) and wraps the real test body to
-run those captured blocks first, then the actual assertion. Because that
-wrapped body only executes after Kotest's own real `beforeEach` chain has
-already fired, the captured `justBeforeEach` blocks run at exactly the right
-moment for free.
+What does work, and is what's actually implemented in
+`JustBeforeEach.kt`: `describe`/`context`/`it` stay completely vanilla
+Kotest -- no wrapper, no import swap. Only two new pieces exist:
 
-One constraint this puts on the implementation, not a new feature: Kotest
-builds a spec's whole test tree in one pass -- the closure passed to
-`describe`/`context` runs exactly once per spec instance to register every
-`it` beneath it, not once per `it` (see `kotidy`'s own `docs/FRAMEWORK.md`,
-"Computed-once context locals vs. `subject`"). The stack push/pop has to
-happen at that one-time registration pass, and `it`'s snapshot of the active
-stack has to be captured then too -- not something that can be deferred to
-actual test-run time. Needs a dedicated test: a `context` with two sibling
-`it`s under one `justBeforeEach`, confirming the stack doesn't leak state
-across sibling registrations or between spec instances.
+- `justBeforeEach(block)`, a real extension function on `ContainerScope`
+  (Kotest's own container-block receiver type, no subclassing involved).
+  Calling it inside a `describe`/`context` block registers `block` into
+  `JustBeforeEachRegistry`, keyed by that container's own `Descriptor`
+  (`ContainerScope.testCase.descriptor`).
+- `JustBeforeEachExtension`, a `TestCaseExtension` -- Kotest's own,
+  documented extension point for wrapping test-case execution. For every
+  `TestCase` about to run, it walks the descriptor's ancestor chain
+  (`generateSequence(descriptor) { it.parent() }`, reversed to root-to-leaf),
+  looks up any registered blocks for each ancestor, and replaces the
+  `TestCase`'s `test` closure with one that runs those blocks first, then
+  calls the original. Kotest's real `beforeEach`/`beforeTest` chain is
+  untouched and still fires as part of `execute(testCase)` -- swapping in a
+  wrapped `test` closure before calling `execute` doesn't skip or reorder
+  that, it just runs *inside* the slot Kotest was already going to invoke
+  after those hooks complete. That's what gets Quick's "after every
+  `beforeEach` at any depth, immediately before the `it`" guarantee, without
+  needing to touch `describe`/`context`/`it` at all.
+
+Consumers need one extra step this design implies: registering
+`JustBeforeEachExtension` in their own `ProjectConfig.extensions()` (see
+this repo's own `src/test/kotlin/.../ProjectConfig.kt`). Without it,
+`justBeforeEach` blocks are recorded but never actually run -- a real
+footgun worth calling out prominently in the README, not just here.
+
+`JustBeforeEachSpec.kt` (this repo's own dogfood test) proves the ordering
+directly: a `log` list mutated by `beforeEach`/`justBeforeEach`/`it`,
+asserting the exact sequence, plus a case where `justBeforeEach` is declared
+*above* a nested context that has its own `beforeEach`, confirming the inner
+hook still runs first.
+
+**Not yet verified against a real compiler** -- built by inspection with no
+Kotest jars reachable from the sandbox (see "Current status"). The riskiest
+specifics, worth checking first on a real Mac: `Descriptor`'s package
+(assumed `io.kotest.core.descriptors.Descriptor`) and its `parent()` method
+shape, `ContainerScope.testCase` as the way to reach the current container's
+descriptor, `TestCaseExtension.intercept`'s exact signature, and whether
+`TestCase` is really a data class exposing a copyable `test` field. Any of
+these being named slightly differently in the pinned Kotest `5.9.1` is a
+small, localized fix, not a redesign -- the mechanism above is the part to
+preserve.
 
 ## Scope for v1: suspend support is not a follow-up
 
@@ -218,10 +253,15 @@ hyphens).
 ## Current status
 
 Repo scaffolded (Gradle/Kotlin project, Kotest + ktlint + `kotidy` wired up,
-CI, `Makefile`) but the DSL itself -- the shadowed `describe`/`context`/`it`/
-`justBeforeEach` -- isn't written yet. No Maven Central publishing setup
-yet either; see "Packaging" above for why that's deliberate. Built by
-inspection with no local toolchain to confirm against (see
+CI, `Makefile`), and the DSL itself is written: `justBeforeEach` +
+`JustBeforeEachExtension` in `src/main/kotlin/.../JustBeforeEach.kt`, wired
+into the test `ProjectConfig`, with a dogfood spec
+(`JustBeforeEachSpec.kt`) covering ordering and the `runCatching`-outcome
+convention. No Maven Central publishing setup yet; see "Packaging" above
+for why that's deliberate.
+
+Built entirely by inspection, no local toolchain to confirm against (see
 `~/workspace/woodie/docs/COWORK.md`'s "Working on unfamiliar stacks") --
 `./gradlew clean check` needs a real Mac run before trusting any of this
-compiles.
+actually compiles. See "Core mechanism" above for the specific API surface
+most likely to need a small fix once real Kotest `5.9.1` jars are involved.

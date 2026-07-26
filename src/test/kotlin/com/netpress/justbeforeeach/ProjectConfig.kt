@@ -9,4 +9,8 @@ import io.kotest.core.test.TestCaseOrder
 object ProjectConfig : AbstractProjectConfig() {
     override val specExecutionOrder = SpecExecutionOrder.Lexicographic
     override val testCaseOrder = TestCaseOrder.Sequential
+
+    // Without this, justBeforeEach blocks are registered but never actually
+    // run -- see JustBeforeEach.kt's own doc comment.
+    override fun extensions() = listOf(JustBeforeEachExtension)
 }

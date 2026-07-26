@@ -17,10 +17,11 @@ kotlin {
 
 dependencies {
     // Kotest is a real (non-test-only) dependency here, not just a test
-    // fixture -- this library's whole surface is a thin wrapper around
-    // DescribeSpec's own describe/context/it, so consumers need Kotest's
-    // real types to compile against ours. See docs/COWORK.md.
-    implementation("io.kotest:kotest-framework-engine:5.9.1")
+    // fixture -- justBeforeEach/JustBeforeEachExtension are built directly
+    // against ContainerScope/TestCase/TestCaseExtension/Descriptor, so
+    // consumers need Kotest's real API types to compile against ours.
+    // See docs/COWORK.md.
+    implementation("io.kotest:kotest-framework-api:5.9.1")
     testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
 }
