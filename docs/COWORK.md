@@ -345,6 +345,22 @@ Friday/Saturday/Sunday cases. `make lint` clean too. This is the real,
 cross-repo confirmation the sequencing above was waiting on -- tagging a
 release here is unblocked as of this run.
 
+**Real CI failure, since fixed:** the original sibling-checkout step used
+`path: ../kwick` directly in `actions/checkout@v4`, on the assumption that a
+`path` outside `$GITHUB_WORKSPACE` would just resolve to that sibling
+directory. It doesn't -- `actions/checkout@v4` refuses any `path` that
+isn't under the workspace ("Repository path ... is not under ..."), so the
+step failed outright the first time CI actually ran (never caught by
+`make test` on a real Mac, since that only exercises the Gradle side, not
+the checkout step itself). Fixed in `next-caltrain-kotlin`'s `CI.yml` by
+checking out into a workspace-relative subdirectory (`path:
+kwick-checkout`) and adding a plain `mv kwick-checkout ../kwick` step
+after it -- `run:` steps default to `$GITHUB_WORKSPACE`, so that lands
+exactly at the sibling path Gradle's `includeBuild` expects. Worth knowing
+before reaching for this same trick in any other consumer (`kotidy`'s,
+`gorderly`'s, or `xctidy`'s, if one of them ever needs an unpublished
+sibling dependency) -- the direct `path: ../...` form doesn't work at all.
+
 ## Tag/push status
 
 `v0.1.0` is tagged locally (annotated, `git rev-parse HEAD` and
