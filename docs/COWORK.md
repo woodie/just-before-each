@@ -298,3 +298,21 @@ Took four real-Mac rounds to get here from the first inspection-only pass
 consistent with this account's "Working on unfamiliar stacks" convention:
 the sandbox can build by inspection and reason about design, but only a
 real toolchain run can actually confirm Kotest's exact API surface.
+
+## Consumed by
+
+[`next-caltrain-kotlin`](https://github.com/woodie/next-caltrain-kotlin) --
+via a composite build (`includeBuild("../just-before-each")` in its
+`settings.gradle.kts`, `testImplementation("com.netpress:just-before-
+each:0.1.0")` in `app/build.gradle.kts`), not a published artifact, so both
+repos need to sit as sibling directories on disk. `GoodTimesSpec.kt`'s
+`debugOverrideDotw` context is the concrete, motivating rewrite -- see its
+own commit for the before/after. CI there needs a temporary sibling-
+checkout step for the same reason (see its `CI.yml`); both repos also need
+to actually be pushed before that CI run can go green, since it checks out
+`woodie/just-before-each` fresh rather than reading the local mount.
+
+Per this account's own "Releasing across multiple repos" convention: prove
+this out for real in `next-caltrain-kotlin` first (real `./gradlew clean
+test` run, not just `check` here), then tag a release -- not before. See
+"Packaging" above for the same sequencing applied to publishing.
