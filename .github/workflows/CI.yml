@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # Matches this repo's own jvmToolchain(17).
+          java-version: "17"
+
+      - name: Run checks
+        # clean check, not make check -- CI should fail loudly on a style
+        # violation, not silently auto-fix it via ktlintFormat and pass
+        # anyway. check already runs ktlintCheck + test together.
+        run: ./gradlew clean check
+
+  # No publish job yet, unlike humane-kotlin's/kotidy's CI.yml -- there's no
+  # Maven Central publishing setup in build.gradle.kts until the real DSL
+  # exists and is proven (see docs/COWORK.md "Packaging"). Add a tag-triggered
+  # publish job (mirroring humane-kotlin's own CI.yml) at the same time
+  # com.vanniktech.maven.publish is added to build.gradle.kts, not before.
