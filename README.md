@@ -5,8 +5,8 @@
 [![Release](https://img.shields.io/github/v/release/woodie/kwick.svg)](https://github.com/woodie/kwick/releases/latest)
 [![License](https://img.shields.io/github/license/woodie/kwick.svg)](LICENSE)
 
-Better, cleaner tests for Kotest's `DescribeSpec` -- real nested context
-with less duplication, starting with `justBeforeEach` (inspired by
+Better, cleaner tests for Kotest's `DescribeSpec` with real nested context
+with less duplication with `justBeforeEach` (inspired by
 [Quick](https://github.com/Quick/Quick)).
 
 ## `justBeforeEach`
