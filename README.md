@@ -7,7 +7,7 @@
 
 Better, cleaner tests for Kotest's `DescribeSpec` -- real nested context
 with less duplication, starting with `justBeforeEach` (inspired by
-[Quick](https://github.com/Quick/Quick).
+[Quick](https://github.com/Quick/Quick)).
 
 ## `justBeforeEach`
 
