@@ -51,14 +51,18 @@ from production code, so it belongs on `testImplementation`, not
 real types to compile the library itself, not just test it).
 
 Bootstrap path, mirroring `humane-kotlin`'s own history: prove the DSL out
-here first, consume it from `next-caltrain-kotlin` as a composite build
-(`pluginManagement`-free `includeBuild("../kwick")`, a plain
+here first, consume it from `next-caltrain-kotlin` (and later `huck`) as a
+composite build (`pluginManagement`-free `includeBuild("../kwick")`, a plain
 dependency substitution -- not the `pluginManagement { includeBuild(...) }`
 form `kotidy` needed, since this isn't a plugin), then add
 `com.vanniktech.maven.publish` + Central Portal signing once it's stable
 enough to publish for real, the same way `humane-kotlin` went from
-composite-build-only at `v0.1.0` to Maven Central at `v0.1.1`. Not done yet
-in this repo's `build.gradle.kts` on purpose -- see the comment there.
+composite-build-only at `v0.1.0` to Maven Central at `v0.1.1`. That condition
+is now met (see issue #2 and `docs/releases/v0.1.2.md`) -- `build.gradle.kts`
+carries the real `mavenPublishing {}` block and `CI.yml` has the tag-triggered
+`publish` job; both `next-caltrain-kotlin` and `huck` switch off their own
+composite build separately, once this release is confirmed live on the
+Central Portal (issue #3).
 
 ## Core mechanism: `TestCaseExtension`, not shadowed `describe`/`context`/`it`
 

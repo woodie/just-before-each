@@ -3,6 +3,11 @@ name: CI
 on:
   push:
     branches: ["main"]
+    # Tags matching v* (e.g. v0.2.0) additionally trigger the publish job
+    # below -- pushing a tag is how a build here becomes a real Maven
+    # Central release, not just a CI-verified one. Matches humane-kotlin's/
+    # kotidy's own CI.yml tag-triggered publish pattern.
+    tags: ["v*"]
   pull_request:
     branches: ["main"]
 
@@ -26,8 +31,36 @@ jobs:
         # anyway. check already runs ktlintCheck + test together.
         run: ./gradlew clean check
 
-  # No publish job yet, unlike humane-kotlin's/kotidy's CI.yml -- there's no
-  # Maven Central publishing setup in build.gradle.kts until the real DSL
-  # exists and is proven (see docs/COWORK.md "Packaging"). Add a tag-triggered
-  # publish job (mirroring humane-kotlin's own CI.yml) at the same time
-  # com.vanniktech.maven.publish is added to build.gradle.kts, not before.
+  publish:
+    # Only on a version tag, not on every push to main or PR -- and only
+    # after test passes, so a broken build never reaches Maven Central.
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Publish to Maven Central
+        # ORG_GRADLE_PROJECT_-prefixed env vars are how Gradle exposes them
+        # as project properties -- that prefix (and the exact camelCase
+        # property name after it) is fixed by Gradle itself, not something
+        # we can rename. The secret names on the right are whatever this
+        # repo's secrets are actually called; only the env var names on the
+        # left have to match what com.vanniktech.maven.publish reads.
+        # publishToMavenCentral() (no automaticRelease) still leaves the
+        # deployment in "Validated" state for a manual Publish click on the
+        # Central Portal -- see build.gradle.kts's mavenPublishing block.
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.ORG_GRADLE_PROJECT_MAVENCENTRALUSERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.ORG_GRADLE_PROJECT_MAVENCENTRALPASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGINMEMORYKEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGINMEMORYKEYID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.ORG_GRADLE_PROJECT_SIGNINGINMEMORYKEYPASSWORD }}
+        run: ./gradlew publishToMavenCentral
