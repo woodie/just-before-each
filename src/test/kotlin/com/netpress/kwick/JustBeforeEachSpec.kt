@@ -65,7 +65,10 @@ class JustBeforeEachSpec :
                 // justBeforeEach computed from this context's own
                 // beforeEach-set input.
                 context("several its reading one hoisted subject with multiple facts") {
-                    data class Parsed(val upper: String, val length: Int)
+                    data class Parsed(
+                        val upper: String,
+                        val length: Int,
+                    )
 
                     lateinit var input: String
                     lateinit var parsed: Parsed
