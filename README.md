@@ -32,7 +32,7 @@ class CalculatorSpec : DescribeSpec({
             beforeEach { subject.enter(5) }
 
             describe("#divideBy") {
-                var divisor = 0
+                var divisor = 0 // declare variable
                 justBeforeEach { subject.divideBy(divisor) }
 
                 context("when the divisor is 1") {
