@@ -26,10 +26,11 @@ import io.kotest.matchers.shouldBe
 class PrimeSpec : DescribeSpec({
     describe("#remainder") {
         context("with the prime number 5") {
-            val number = 5
+            lateinit var subject: Calculator
             var divisor = 1
-            var remainder = 0 // lateinit doesn't work on Int -- see "Gotchas" below
-            justBeforeEach { remainder = number % divisor }
+            var remainder = 0
+            beforeEach { subject = Calculator(5) }
+            justBeforeEach { remainder = subject.remainder(divisor) }
 
             context("when divided by 1") {
                 beforeEach { divisor = 1 }
@@ -38,7 +39,7 @@ class PrimeSpec : DescribeSpec({
 
             context("when divided by 3") {
                 beforeEach { divisor = 3 }
-                it("has a remainder") { remainder shouldBe 2 }
+                it("has a remainder of 2") { remainder shouldBe 2 }
             }
         }
     }
@@ -53,14 +54,14 @@ Which renders as:
     when divided by 1
       ✔ has no remainder
     when divided by 3
-      ✔ has a remainder
+      ✔ has a remainder of 2
 ```
 
 Each `context` only states what's different about it (here, just `divisor`);
-the call under test is written once, in `justBeforeEach`, and Kotest's own
-guarantee that every ancestor `beforeEach` completes before the `it` runs is
-what makes this work -- no engine hook or wrapped `describe`/`context`/`it`
-needed.
+`subject` is rebuilt fresh in `beforeEach`, and the actual call under test is
+written once, in `justBeforeEach` -- Kotest's own guarantee that every
+ancestor `beforeEach` completes before the `it` runs is what makes this work,
+no engine hook or wrapped `describe`/`context`/`it` needed.
 
 ## Setup
 
@@ -102,17 +103,20 @@ context("when the server rejects the delete") {
 }
 ```
 
-## Gotchas
+## Scoping Variables
 
-The usual way to share a value `justBeforeEach` sets with the `it` blocks
-below it is `lateinit var` -- it forces every `it` to see a real value, no
-fake placeholder needed. That doesn't work for every shared-variable type,
-though, which both examples above happen to hit: `lateinit` is restricted
-to non-null, non-primitive reference types. `Result<T>` is a Kotlin inline
-value class and primitives (`Int`, `Boolean`, ...) aren't reference types at
-all, so neither can use `lateinit var`; declare a `var` with a throwaway
-placeholder instead (as above) -- `justBeforeEach` overwrites it before any
-`it` runs, so the placeholder value itself never matters.
+`beforeEach`/`justBeforeEach` rebuild their value fresh before every `it`, so
+how you declare that variable just depends on its type:
+
+- **Reference types**, like `Calculator` above, can use
+  `lateinit var subject: Calculator` -- it forces every `it` to see a real,
+  freshly-built value, with nothing to initialize by hand.
+- **Primitives and inline value classes** (`Int`, `Boolean`, `Result<T>`, ...)
+  can't use `lateinit` -- it's restricted to non-null, non-primitive reference
+  types. Declare a plain `var` initialized to a throwaway placeholder instead
+  (`remainder = 0` above, `result = Result.failure(...)` in the `runCatching`
+  example) -- `justBeforeEach` overwrites it before any `it` runs, so the
+  placeholder value itself never matters.
 
 ## Requirements
 
