@@ -35,13 +35,13 @@ class CalculatorSpec : DescribeSpec({
                 var divisor = 0
                 justBeforeEach { subject.divideBy(divisor) }
 
-                context("when divided by 1") {
+                context("when the divisor is 1") {
                     beforeEach { divisor = 1 }
 
                     it("has no remainder") { subject.remainder() shouldBe 0 }
                 }
 
-                context("when divided by 3") {
+                context("when the divisor is 3") {
                     beforeEach { divisor = 3 }
 
                     it("has a remainder of 2") { subject.remainder() shouldBe 2 }
@@ -58,9 +58,9 @@ Which renders as:
 Calculator
   with 5 entered
     #divideBy
-      when divided by 1
+      when the divisor is 1
         ✔ has no remainder
-      when divided by 3
+      when the divisor is 3
         ✔ has a remainder of 2
 ```
 
