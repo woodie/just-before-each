@@ -23,23 +23,29 @@ import com.netpress.kwick.justBeforeEach
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 
-class PrimeSpec : DescribeSpec({
-    describe("#remainder") {
-        context("with the prime number 5") {
-            lateinit var subject: Calculator
-            var divisor = 1
-            var remainder = 0
-            beforeEach { subject = Calculator(5) }
-            justBeforeEach { remainder = subject.remainder(divisor) }
+class CalculatorSpec : DescribeSpec({
+    describe("Calculator") {
+        lateinit var subject: Calculator
+        beforeEach { subject = Calculator() }
 
-            context("when divided by 1") {
-                beforeEach { divisor = 1 }
-                it("has no remainder") { remainder shouldBe 0 }
-            }
+        context("with 5 entered") {
+            beforeEach { subject.enter(5) }
 
-            context("when divided by 3") {
-                beforeEach { divisor = 3 }
-                it("has a remainder of 2") { remainder shouldBe 2 }
+            describe("#divideBy") {
+                var divisor = 0
+                justBeforeEach { subject.divideBy(divisor) }
+
+                context("when divided by 1") {
+                    beforeEach { divisor = 1 }
+
+                    it("has no remainder") { subject.remainder() shouldBe 0 }
+                }
+
+                context("when divided by 3") {
+                    beforeEach { divisor = 3 }
+
+                    it("has a remainder of 2") { subject.remainder() shouldBe 2 }
+                }
             }
         }
     }
@@ -49,19 +55,31 @@ class PrimeSpec : DescribeSpec({
 Which renders as:
 
 ```
-#remainder
-  with the prime number 5
-    when divided by 1
-      ✔ has no remainder
-    when divided by 3
-      ✔ has a remainder of 2
+Calculator
+  with 5 entered
+    #divideBy
+      when divided by 1
+        ✔ has no remainder
+      when divided by 3
+        ✔ has a remainder of 2
 ```
 
-Each `context` only states what's different about it (here, just `divisor`);
-`subject` is rebuilt fresh in `beforeEach`, and the actual call under test is
-written once, in `justBeforeEach` -- Kotest's own guarantee that every
-ancestor `beforeEach` completes before the `it` runs is what makes this work,
-no engine hook or wrapped `describe`/`context`/`it` needed.
+`subject` still needs `beforeEach`, not a plain `val` -- not because anything
+is passed into `Calculator()`, but because `enter(5)`/`divideBy(divisor)`
+*mutate* it. Kotest only evaluates a `describe`/`context` body once, to build
+the whole test tree, so a `val` built there would be one shared `Calculator`
+instance reused across every `it` in this spec -- each test's `enter`/`divideBy`
+would pile state on top of whatever the previous test left behind. `beforeEach`
+is what guarantees a clean, unmutated `Calculator` for every single test.
+
+`divisor` only varies in the leaf `context`s under `#divideBy` -- and
+`subject.divideBy(divisor)` genuinely can't be an ordinary `beforeEach` at the
+`#divideBy` level, because Kotest always runs a parent's `beforeEach` before
+its children's: it would call `divideBy(divisor)` using whatever `divisor` was
+*before* the leaf `context` below it ever set it. `justBeforeEach` is what
+makes this correct -- it runs after every `beforeEach` at every depth, so
+`divisor` is always set before `subject.divideBy(divisor)` runs, and each `it`
+just asks `subject` what's true now.
 
 ## Setup
 
@@ -114,7 +132,7 @@ how you declare that variable just depends on its type:
 - **Primitives and inline value classes** (`Int`, `Boolean`, `Result<T>`, ...)
   can't use `lateinit` -- it's restricted to non-null, non-primitive reference
   types. Declare a plain `var` initialized to a throwaway placeholder instead
-  (`remainder = 0` above, `result = Result.failure(...)` in the `runCatching`
+  (`divisor = 0` above, `result = Result.failure(...)` in the `runCatching`
   example) -- `justBeforeEach` overwrites it before any `it` runs, so the
   placeholder value itself never matters.
 
