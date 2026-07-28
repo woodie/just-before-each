@@ -23,30 +23,44 @@ import com.netpress.kwick.justBeforeEach
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 
-class CalculatorSpec : DescribeSpec({
-    describe("#divide") {
-        var numerator = 0
-        var denominator = 1
-        var result = 0 // lateinit doesn't work on Int -- see "Gotchas" below
-        justBeforeEach { result = Calculator.divide(numerator, denominator) }
+class PrimeSpec : DescribeSpec({
+    describe("#remainder") {
+        context("with the prime number 5") {
+            val number = 5
+            var divisor = 1
+            var remainder = 0 // lateinit doesn't work on Int -- see "Gotchas" below
+            justBeforeEach { remainder = number % divisor }
 
-        context("dividing evenly") {
-            beforeEach { numerator = 10; denominator = 2 }
-            it("returns the quotient") { result shouldBe 5 }
-        }
+            context("when divided by 1") {
+                beforeEach { divisor = 1 }
+                it("has no remainder") { remainder shouldBe 0 }
+            }
 
-        context("dividing with a remainder") {
-            beforeEach { numerator = 7; denominator = 2 }
-            it("truncates toward zero") { result shouldBe 3 }
+            context("when divided by 3") {
+                beforeEach { divisor = 3 }
+                it("has a remainder") { remainder shouldBe 2 }
+            }
         }
     }
 })
 ```
 
-Each `context` only states what's different about it; the call under test
-is written once, in `justBeforeEach`, and Kotest's own guarantee that every
-ancestor `beforeEach` completes before the `it` runs is what makes this
-work -- no engine hook or wrapped `describe`/`context`/`it` needed.
+Which renders as:
+
+```
+#remainder
+  with the prime number 5
+    when divided by 1
+      ✔ has no remainder
+    when divided by 3
+      ✔ has a remainder
+```
+
+Each `context` only states what's different about it (here, just `divisor`);
+the call under test is written once, in `justBeforeEach`, and Kotest's own
+guarantee that every ancestor `beforeEach` completes before the `it` runs is
+what makes this work -- no engine hook or wrapped `describe`/`context`/`it`
+needed.
 
 ## Setup
 
