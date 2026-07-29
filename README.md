@@ -38,30 +38,22 @@ class CalculatorSpec : DescribeSpec({
                 context("when the divisor is 1") {
                     beforeEach { divisor = 1 }
 
-                    it("has no remainder") { subject.remainder() shouldBe 0 }
+                    it("has no remainder") {
+                        subject.remainder() shouldBe 0
+                    }
                 }
 
                 context("when the divisor is 3") {
                     beforeEach { divisor = 3 }
 
-                    it("has a remainder of 2") { subject.remainder() shouldBe 2 }
+                    it("has a remainder of 2") {
+                        subject.remainder() shouldBe 2
+                    }
                 }
             }
         }
     }
 })
-```
-
-Which renders as:
-
-```
-Calculator
-  with 5 entered
-    #divideBy
-      when the divisor is 1
-        ✔ has no remainder
-      when the divisor is 3
-        ✔ has a remainder of 2
 ```
 
 `subject` still needs `beforeEach`, not a plain `val` -- not because anything
