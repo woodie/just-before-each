@@ -119,7 +119,9 @@ class JustBeforeEachSpec :
                 }
             }
 
-            // Proves the suspend-first signature actually suspends; see docs/COMMENTS.md.
+            // The only case here that actually suspends (delay()) rather than
+            // just compiling against the suspend signature -- delete this and
+            // justBeforeEach's suspend support goes back to being unverified.
             context("a real suspend call inside justBeforeEach") {
                 class FakeAsyncClient {
                     suspend fun delete(id: String): String {
