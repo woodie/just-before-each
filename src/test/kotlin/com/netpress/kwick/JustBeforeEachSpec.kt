@@ -119,13 +119,7 @@ class JustBeforeEachSpec :
                 }
             }
 
-            // Regression/proof case for the suspend-first API: justBeforeEach's
-            // signature (suspend TestScope.() -> Unit) was written to support a
-            // real suspend call from the start (see docs/COWORK.md, "Scope for
-            // v1"), but nothing before this exercised an actual suspension point
-            // -- every other case in this file is synchronous. delay() forces a
-            // real coroutine suspend/resume, mirroring zouk's ScanClientSpec
-            // shape (`justBeforeEach { try await client.delete(scan) }`).
+            // Proves the suspend-first signature actually suspends; see docs/COMMENTS.md.
             context("a real suspend call inside justBeforeEach") {
                 class FakeAsyncClient {
                     suspend fun delete(id: String): String {
