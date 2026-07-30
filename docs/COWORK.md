@@ -421,27 +421,31 @@ exist remotely yet), and the `gh release create` command above has nothing
 to attach to. Push `kwick` first (tag included), then
 `next-caltrain-kotlin`, then run the `gh release create` command.
 
-## Next steps (drafted this session, not filed as real issues yet)
+**Update:** all pushed since. `kwick` is live on GitHub and on Maven
+Central through `v0.1.2` (`v0.1.0`/`v0.1.1`/`v0.1.2` all tagged and
+pushed); `next-caltrain-kotlin` pulls the real published
+`com.netpress:kwick:0.1.2` dependency, no sibling checkout or composite
+build left in its CI. See "Next steps" below -- everything drafted there
+is done.
 
-Seven follow-ups were written up as GitHub-issue-shaped markdown files
-during this session, one per repo/topic, but they only exist as session
-scratch output right now -- not committed anywhere, not filed via `gh issue
-create`. If they're not filed for real before this thread is gone, a future
-cold session has no way to find them except this paragraph, so treat filing
-them (or at least committing the drafts somewhere durable) as the actual
-next action, not an optional cleanup:
+## Next steps -- all done
 
-- **`kwick`**: publish to Maven Central (sign and publish,
-  following `humane-kotlin`'s `v0.1.0` -> `v0.1.1` bootstrap exactly),
-  under the `com.netpress:kwick` coordinate -- the naming question is
-  resolved (see "Naming" above), so this is unblocked.
-- **`next-caltrain-kotlin`**: switch off the composite build once the Maven
-  Central publish lands (drop `includeBuild`, pin a real version, drop the
-  CI sibling-checkout step).
-- **`kotidy`**: `docs/FRAMEWORK.md` gets a new `justBeforeEach` section
-  (mirroring `xctidy`'s) plus a named `afterEach`-for-cleanup section.
-- **`gorderly`** and **`xctidy`**: `docs/FRAMEWORK.md` both get the
-  direct-assign-vs-closure-`subject` clarification from above.
-- **`huck`**: revisit `ScanClientSpec.kt`'s inline-per-`it` suspend setup
-  once this library is published -- the concrete first real use case for
-  the suspend support already built in.
+Five follow-ups were drafted in an earlier session as GitHub-issue-shaped
+markdown files. Confirmed done, one by one, rather than just assumed:
+
+- **`kwick`**: published to Maven Central under `com.netpress:kwick`,
+  through `v0.1.2` (`git tag -l` shows `v0.1.0`/`v0.1.1`/`v0.1.2`; `v0.1.2`'s
+  own commit is literally "Bump to v0.1.2: publish to Maven Central").
+- **`next-caltrain-kotlin`**: switched off the composite build --
+  `app/build.gradle.kts` now depends on `com.netpress:kwick:0.1.2` directly,
+  no `includeBuild`; its `CI.yml` no longer has a sibling-checkout step.
+- **`kotidy`**: `docs/FRAMEWORK.md` has both the `justBeforeEach` section
+  and a named `afterEach`-for-cleanup section.
+- **`gorderly`** and **`xctidy`**: both `docs/FRAMEWORK.md`s carry the
+  direct-assign-vs-closure-`subject` clarification (worded slightly
+  differently in each, same substance).
+- **`huck`**: `ScanClientSpec.kt` now imports and uses `kwick`'s
+  `justBeforeEach` for `cachedFile`/`save`/`uniqueDestination`;
+  `fetchScans()`/`delete()` stay inline deliberately, documented in that
+  file as matching zouk's own `ScanClientSpec.swift` choice, not an
+  oversight.
