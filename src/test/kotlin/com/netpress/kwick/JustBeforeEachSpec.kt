@@ -2,6 +2,7 @@ package com.netpress.kwick
 
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.delay
 
 class JustBeforeEachSpec :
     DescribeSpec({
@@ -114,6 +115,35 @@ class JustBeforeEachSpec :
 
                     it("captures the exception instead of failing setup") {
                         result.exceptionOrNull()?.message shouldBe "boom"
+                    }
+                }
+            }
+
+            // Regression/proof case for the suspend-first API: justBeforeEach's
+            // signature (suspend TestScope.() -> Unit) was written to support a
+            // real suspend call from the start (see docs/COWORK.md, "Scope for
+            // v1"), but nothing before this exercised an actual suspension point
+            // -- every other case in this file is synchronous. delay() forces a
+            // real coroutine suspend/resume, mirroring zouk's ScanClientSpec
+            // shape (`justBeforeEach { try await client.delete(scan) }`).
+            context("a real suspend call inside justBeforeEach") {
+                class FakeAsyncClient {
+                    suspend fun delete(id: String): String {
+                        delay(1)
+                        return "deleted:$id"
+                    }
+                }
+
+                val client = FakeAsyncClient()
+                lateinit var id: String
+                lateinit var result: String
+                justBeforeEach { result = client.delete(id) }
+
+                context("id set by a nested beforeEach") {
+                    beforeEach { id = "scan-42" }
+
+                    it("awaits the suspend call before the it body runs") {
+                        result shouldBe "deleted:scan-42"
                     }
                 }
             }
