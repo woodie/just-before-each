@@ -5,9 +5,9 @@
 [![Release](https://img.shields.io/github/v/release/woodie/kwick.svg)](https://github.com/woodie/kwick/releases/latest)
 [![License](https://img.shields.io/github/license/woodie/kwick.svg)](LICENSE)
 
-Better, cleaner tests for Kotest's `DescribeSpec` with real nested context
-with less duplication with `justBeforeEach` (inspired by
-[Quick](https://github.com/Quick/Quick)).
+A `justBeforeEach` hook for Kotest's `DescribeSpec` -- real nested
+`context`s with less duplication between them, inspired by
+[Quick](https://github.com/Quick/Quick).
 
 ## `justBeforeEach`
 
@@ -130,8 +130,7 @@ how you declare that variable just depends on its type:
 
 ## Requirements
 
-JDK 17+, Kotlin 2.2.10, Kotest 5.9.1 -- matching this account's other
-Kotlin repos (`next-caltrain-kotlin`, `humane-kotlin`, `kotidy`).
+JDK 17+, Kotlin 2.2.10, Kotest 5.9.1.
 
 ## Development
 
