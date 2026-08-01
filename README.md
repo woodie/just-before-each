@@ -140,3 +140,7 @@ make test    # ./gradlew clean test -- Kotest's real nested describe/context/it 
 make lint    # ./gradlew ktlintCheck
 make check   # ./gradlew check
 ```
+
+## Learn more
+
+- [`kotidy`](https://github.com/woodie/kotidy)'s [FRAMEWORK](https://github.com/woodie/kotidy/blob/main/docs/FRAMEWORK.md) -- full suites combining kotest + kwick: context nesting, the subject pattern, stubbing and more.
